@@ -9,11 +9,10 @@
           <p class="role">{{ employee.designation }}</p>
         </div>
       </div>
-      <span
-        class="status"
-        :class="employee.status === 'Active' ? 'is-active' : 'is-inactive'"
-        role="status"
-      >
+      <span v-if="employee.status === 'Active'" class="status is-active" role="status">
+        <span class="status-dot"></span>{{ employee.status }}
+      </span>
+      <span v-else class="status is-inactive" role="status">
         <span class="status-dot"></span>{{ employee.status }}
       </span>
     </header>
@@ -53,6 +52,13 @@ export default {
     EmployeeSkills
   },
 
+  props: {
+    employee: {
+      type: Object,
+      required: true
+    }
+  },
+
   computed: {
     initials() {
       return this.employee.name
@@ -62,19 +68,6 @@ export default {
         .join("")
         .toUpperCase();
     }
-  },
-
-  data() {
-    return {
-      employee: {
-        name: "Renjith",
-        designation: "Project Manager",
-        department: "IT",
-        experience: 5,
-        skills: ["Vue.js", "Angular", "Node.js", "AWS"],
-        status: "Active"
-      }
-    };
   }
 };
 </script>

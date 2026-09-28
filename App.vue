@@ -11,11 +11,29 @@
     <main class="content">
       <section class="page-heading" aria-labelledby="page-title">
         <div>
-          <h1 id="page-title">Employee profile</h1>
-          <p class="page-description">Employee details and current role.</p>
+          <h1 id="page-title">Employee directory</h1>
+          <p class="page-description">People, roles, and skills across the organization.</p>
         </div>
-     </section>
-      <EmployeeProfile />
+        <div class="directory-tools">
+          <p class="record-label">{{ getFilteredEmployees().length }} EMPLOYEES</p>
+          <label class="department-filter">
+            <span>Department</span>
+            <select v-model="departmentFilter" aria-label="Filter by department">
+              <option value="all">All departments</option>
+              <option v-for="department in getDepartments()" :key="department" :value="department">
+                {{ department }}
+              </option>
+            </select>
+          </label>
+        </div>
+      </section>
+      <section class="employee-grid" aria-label="Employees">
+        <EmployeeProfile
+          v-for="employee in getFilteredEmployees()"
+          :key="employee.id"
+          :employee="employee"
+        />
+      </section>
     </main>
   </div>
 </template>
@@ -28,6 +46,66 @@ export default {
 
   components: {
     EmployeeProfile
+  },
+
+  data() {
+    return {
+      departmentFilter: "all",
+      employees: [
+        {
+          id: 1,
+          name: "Renjith",
+          designation: "Project Manager",
+          department: "IT",
+          experience: 5,
+          skills: ["Vue.js", "Angular", "Node.js", "AWS"],
+          status: "Active"
+        },
+        {
+          id: 2,
+          name: "Abeesh",
+          designation: "HR",
+          department: "HR",
+          experience: 4,
+          skills: ["Figma", "Prototyping", "Design systems"],
+          status: "Active"
+        },
+        {
+          id: 3,
+          name: "Aneesh",
+          designation: "Software Engineer",
+          department: "IT",
+          experience: 3,
+          skills: ["JavaScript", "Vue.js", "REST APIs"],
+          status: "Inactive"
+        },
+        {
+          id: 4,
+          name: "Akhil",
+          designation: "HR",
+          department: "HR",
+          experience: 6,
+          skills: ["Recruiting", "Employee relations", "Onboarding"],
+          status: "Active"
+        }
+      ]
+    };
+  },
+
+  methods: {
+    getDepartments() {
+      return [...new Set(this.employees.map((employee) => employee.department))].sort();
+    },
+
+    getFilteredEmployees() {
+      if (this.departmentFilter === "all") {
+        return this.employees;
+      }
+
+      return this.employees.filter(
+        (employee) => employee.department === this.departmentFilter
+      );
+    }
   }
 };
 </script>
@@ -121,6 +199,40 @@ body {
   margin-bottom: 26px;
 }
 
+.directory-tools {
+  display: flex;
+  align-items: end;
+  gap: 22px;
+}
+
+.directory-tools .record-label {
+  margin-bottom: 11px;
+}
+
+.department-filter {
+  display: grid;
+  gap: 6px;
+  color: #707b73;
+  font-size: 12px;
+}
+
+.department-filter select {
+  min-width: 180px;
+  height: 38px;
+  padding: 0 32px 0 11px;
+  border: 1px solid #dce3dc;
+  border-radius: 5px;
+  color: #29342d;
+  background: #fff;
+  font: inherit;
+}
+
+.employee-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .eyebrow {
   margin: 0 0 11px;
   color: #61776a;
@@ -171,6 +283,24 @@ h1 {
     align-items: start;
     flex-direction: column;
     gap: 14px;
+  }
+
+  .directory-tools {
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .directory-tools .record-label {
+    margin-bottom: 0;
+  }
+
+  .department-filter select {
+    min-width: 160px;
+  }
+
+  .employee-grid {
+    grid-template-columns: 1fr;
   }
 
   h1 {
