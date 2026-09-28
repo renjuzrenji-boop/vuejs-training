@@ -1,0 +1,29 @@
+{
+  "name": "vuejs-training",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Xminds Vuejs Internal training",
+  "homepage": "https://github.com/renjuzrenji-boop/vuejs-training#readme",
+  "bugs": {
+    "url": "https://github.com/renjuzrenji-boop/vuejs-training/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/renjuzrenji-boop/vuejs-training.git"
+  },
+  "license": "ISC",
+  "author": "Renjith-Xminds",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.17"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.4",
+    "vite": "^5.4.8"
+  }
+}
