@@ -165,8 +165,18 @@
         <div class="directory-header">
           <div>
             <h2 id="employee-directory-title">Employee directory</h2>
+            <p class="page-description">Search by name or filter by department.</p>
           </div>
           <div class="directory-tools">
+            <label class="employee-search-input">
+              <span class="visually-hidden">Search employees by name</span>
+              <input
+                v-model.trim="employeeSearchKeyword"
+                type="search"
+                placeholder="Search by name"
+                aria-label="Search employees by name"
+              />
+            </label>
             <p class="record-label">{{ getFilteredEmployees().length }} EMPLOYEES</p>
             <label class="department-filter">
               <span>Department</span>
@@ -179,14 +189,14 @@
             </label>
           </div>
         </div>
-        <div v-if="getFilteredEmployees().length" class="employee-grid">
-          <EmployeeProfile
-            v-for="employee in getFilteredEmployees()"
-            :key="employee.id"
-            :employee="employee"
-          />
-        </div>
-        <p v-else class="empty-employees">No employees found in this department.</p>
+        <p v-if="isEmployeeSearchLoading" class="employee-search-message" role="status">
+          Searching employees...
+        </p>
+        <EmployeeList
+          v-else-if="getFilteredEmployees().length"
+          :employees="getFilteredEmployees()"
+        />
+        <p v-else class="employee-search-message">No employees match the current filters.</p>
       </section>
 
       <section v-else-if="activeTab === 'expenses'" id="expense-tracker" class="expense-tracker" aria-labelledby="expense-title">
@@ -274,7 +284,8 @@
         </div>
       </section>
 
-      <section v-else id="salary-calculator" class="salary-calculator" aria-labelledby="salary-title">
+      <template v-else-if="activeTab === 'salary'">
+      <section id="salary-calculator" class="salary-calculator" aria-labelledby="salary-title">
         <header class="salary-heading">
           <div>
             <h1 id="salary-title">Employee salary calculator</h1>
@@ -335,19 +346,175 @@
         </div>
         <p v-else class="salary-empty">No employees match this salary range.</p>
       </section>
+
+      <section id="employee-data-table" class="employee-data-table mt-4" aria-labelledby="data-table-title">
+        <header class="salary-heading mb-4">
+          <div>
+            <h1 id="data-table-title" class="mb-2">Employee data table</h1>
+            <p class="page-description mb-2">Select a row or use its actions to manage employees.</p>
+          </div>
+          <div class="ml-auto flex items-center gap-4">
+            <span class="record-label">{{ employees.length }} EMPLOYEES</span>
+            <button
+              type="button"
+              class="inline-flex h-10 items-center justify-center rounded bg-[#32634f] px-4 text-sm font-semibold text-white hover:bg-[#295440]"
+              @click="openAddEmployeeModal"
+            >
+              Add employee
+            </button>
+          </div>
+        </header>
+
+        <p v-if="tableMessage" class="employee-table-message text-red-500" role="status">{{ tableMessage }}</p>
+
+        <p v-if="selectedEmployee" class="selected-employee mb-2 text-green-500">
+          Selected: <strong>{{ selectedEmployee.name }}</strong>
+          <span>{{ selectedEmployee.designation }} · {{ selectedEmployee.department }}</span>
+        </p>
+
+        <DataTable
+          :columns="employeeTableColumns"
+          :data="employees"
+          empty-message="No employees to display."
+          @edit="handleEmployeeEdit"
+          @delete="handleEmployeeDelete"
+          @row-click="handleEmployeeRowClick"
+        />
+      </section>
+
+      <Modal
+        v-model="employeeModalOpen"
+        @confirm="handleEmployeeModalConfirm"
+        @cancel="cancelEmployeeModal"
+      >
+        <template #header>
+          <h2 class="m-0 text-lg font-semibold text-[#25342c]">
+            {{ employeeModalMode === "delete" ? "Delete employee" : employeeModalMode === "edit" ? "Edit employee" : "Add employee" }}
+          </h2>
+        </template>
+
+        <p v-if="employeeModalMode === 'delete'" class="m-0 text-sm leading-6 text-[#68736b]">
+          Delete {{ employeeToDelete?.name }}? This action cannot be undone.
+        </p>
+        <form
+          v-else
+          ref="employeeFormElement"
+          class="grid grid-cols-1 gap-4 sm:grid-cols-2"
+          aria-label="Employee registration form"
+          @submit.prevent
+        >
+          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
+            <span>Name</span>
+            <input v-model.trim="employeeForm.name" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
+          </label>
+          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
+            <span>Email</span>
+            <input v-model.trim="employeeForm.email" type="email" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
+          </label>
+          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
+            <span>Phone</span>
+            <input v-model.trim="employeeForm.phone" type="tel" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
+          </label>
+          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
+            <span>Gender</span>
+            <select v-model="employeeForm.gender" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required>
+              <option disabled value="">Choose a gender</option>
+              <option v-for="gender in genderOptions" :key="gender" :value="gender">{{ gender }}</option>
+            </select>
+          </label>
+          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
+            <span>Department</span>
+            <input v-model.trim="employeeForm.department" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
+          </label>
+          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
+            <span>Designation</span>
+            <input v-model.trim="employeeForm.designation" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
+          </label>
+          <fieldset class="grid gap-2 border-0 p-0 sm:col-span-2">
+            <legend class="mb-1.5 text-xs font-medium text-[#68736b]">Skills</legend>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <label
+                v-for="skill in skillOptions"
+                :key="skill"
+                class="flex items-center gap-2 text-sm text-[#29342d]"
+              >
+                <input v-model="employeeForm.skills" type="checkbox" :value="skill" class="h-4 w-4 accent-[#32634f]" />
+                {{ skill }}
+              </label>
+            </div>
+          </fieldset>
+          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
+            <span>Experience (years)</span>
+            <input v-model.number="employeeForm.experience" type="number" min="0" step="0.5" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
+          </label>
+          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
+            <span>Joining date</span>
+            <input v-model="employeeForm.joiningDate" type="date" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
+          </label>
+          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
+            <span>Status</span>
+            <select v-model="employeeForm.status" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]">
+              <option>Active</option>
+              <option>Inactive</option>
+            </select>
+          </label>
+        </form>
+
+        <template #footer="{ confirm, cancel }">
+          <div class="flex justify-end gap-2">
+            <button
+              v-if="employeeModalMode !== 'delete'"
+              type="button"
+              class="inline-flex h-10 min-w-24 items-center justify-center rounded border border-[#dce3dc] px-4 text-sm font-medium text-[#536158] hover:bg-[#f7f8f6]"
+              @click="resetEmployeeForm"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              class="inline-flex h-10 min-w-24 items-center justify-center rounded border border-[#dce3dc] px-4 text-sm font-medium text-[#536158] hover:bg-[#f7f8f6]"
+              @click="cancel"
+            >
+              Cancel
+            </button>
+            <button
+              v-if="employeeModalMode === 'delete'"
+              type="button"
+              class="inline-flex h-10 min-w-24 items-center justify-center rounded bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
+              @click="confirm"
+            >
+              Delete
+            </button>
+            <button
+              v-else
+              type="button"
+              class="inline-flex h-10 min-w-24 items-center justify-center rounded bg-[#32634f] px-4 text-sm font-semibold text-white hover:bg-[#295440]"
+              @click="confirmEmployeeForm(confirm)"
+            >
+              {{ employeeModalMode === "edit" ? "Save changes" : "Submit" }}
+            </button>
+          </div>
+        </template>
+      </Modal>
+      </template>
+
     </main>
   </div>
 </template>
 
 <script>
-import { computed, reactive, ref } from "vue";
-import EmployeeProfile from "./src/components/EmployeeProfile.vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import DataTable from "./src/components/DataTable.vue";
+import EmployeeList from "./src/components/EmployeeList.vue";
+import Modal from "./src/components/Modal.vue";
 
 export default {
   name: "App",
 
   components: {
-    EmployeeProfile
+    DataTable,
+    EmployeeList,
+    Modal
   },
 
   setup() {
@@ -379,6 +546,65 @@ export default {
       { value: "5000-7499", label: "$5,000 to $7,499" },
       { value: "7500-plus", label: "$7,500 and above" }
     ];
+    const employeeSearchKeyword = ref("");
+    const employeeSearchResults = ref([]);
+    const isEmployeeSearchLoading = ref(false);
+    const employees = ref([
+      {
+        id: 1,
+        name: "Renjith",
+        email: "renjith@example.com",
+        phone: "9000000001",
+        gender: "Prefer not to say",
+        designation: "Project Manager",
+        department: "IT",
+        experience: 5,
+        joiningDate: "2021-04-12",
+        skills: ["Vue.js", "Angular", "Node.js", "AWS"],
+        status: "Active"
+      },
+      {
+        id: 2,
+        name: "Abeesh",
+        email: "abeesh@example.com",
+        phone: "9000000002",
+        gender: "Prefer not to say",
+        designation: "HR",
+        department: "HR",
+        experience: 4,
+        joiningDate: "2022-01-10",
+        skills: ["Figma", "Prototyping", "Design systems"],
+        status: "Active"
+      },
+      {
+        id: 3,
+        name: "Aneesh",
+        email: "aneesh@example.com",
+        phone: "9000000003",
+        gender: "Prefer not to say",
+        designation: "Software Engineer",
+        department: "IT",
+        experience: 3,
+        joiningDate: "2023-06-05",
+        skills: ["JavaScript", "Vue.js", "REST APIs"],
+        status: "Inactive"
+      },
+      {
+        id: 4,
+        name: "Akhil",
+        email: "akhil@example.com",
+        phone: "9000000004",
+        gender: "Prefer not to say",
+        designation: "HR",
+        department: "HR",
+        experience: 6,
+        joiningDate: "2020-09-21",
+        skills: ["Recruiting", "Employee relations", "Onboarding"],
+        status: "Active"
+      }
+    ]);
+    let latestSearchId = 0;
+
     const calculatedSalaries = computed(() => salaryEmployees.value.map((employee) => {
       const grossSalary = employee.basicSalary + employee.hra + employee.da + employee.bonus;
       const taxAmount = grossSalary * employee.taxRate / 100;
@@ -406,6 +632,41 @@ export default {
 
       const total = filteredSalaryRecords.value.reduce((sum, employee) => sum + employee.netSalary, 0);
       return total / filteredSalaryRecords.value.length;
+    });
+
+    function simulateEmployeeSearch(keyword) {
+      const normalizedKeyword = keyword.trim().toLowerCase();
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(employees.value.filter((employee) =>
+            employee.name.toLowerCase().includes(normalizedKeyword)
+          ));
+        }, 400);
+      });
+    }
+
+    watch(employeeSearchKeyword, (keyword, previousKeyword, onCleanup) => {
+      const searchId = ++latestSearchId;
+      isEmployeeSearchLoading.value = true;
+      const debounceTimer = setTimeout(async () => {
+        const results = await simulateEmployeeSearch(keyword);
+        if (searchId === latestSearchId) {
+          employeeSearchResults.value = results;
+          isEmployeeSearchLoading.value = false;
+        }
+      }, 300);
+
+      onCleanup(() => clearTimeout(debounceTimer));
+    });
+
+    onMounted(async () => {
+      const searchId = ++latestSearchId;
+      isEmployeeSearchLoading.value = true;
+      const results = await simulateEmployeeSearch(employeeSearchKeyword.value);
+      if (searchId === latestSearchId) {
+        employeeSearchResults.value = results;
+        isEmployeeSearchLoading.value = false;
+      }
     });
 
     function addExpense() {
@@ -459,6 +720,7 @@ export default {
 
     return {
       expenses,
+      employees,
       expenseForm,
       expenseCategories,
       salaryFilter,
@@ -466,6 +728,9 @@ export default {
       filteredSalaryRecords,
       highestSalary,
       averageSalary,
+      employeeSearchKeyword,
+      employeeSearchResults,
+      isEmployeeSearchLoading,
       addExpense,
       deleteExpense,
       getTotalExpenses,
@@ -481,43 +746,42 @@ export default {
       cartItems: [],
       orderMessage: "",
       departmentFilter: "all",
-      employees: [
-        {
-          id: 1,
-          name: "Renjith",
-          designation: "Project Manager",
-          department: "IT",
-          experience: 5,
-          skills: ["Vue.js", "Angular", "Node.js", "AWS"],
-          status: "Active"
-        },
-        {
-          id: 2,
-          name: "Abeesh",
-          designation: "HR",
-          department: "HR",
-          experience: 4,
-          skills: ["Figma", "Prototyping", "Design systems"],
-          status: "Active"
-        },
-        {
-          id: 3,
-          name: "Aneesh",
-          designation: "Software Engineer",
-          department: "IT",
-          experience: 3,
-          skills: ["JavaScript", "Vue.js", "REST APIs"],
-          status: "Inactive"
-        },
-        {
-          id: 4,
-          name: "Akhil",
-          designation: "HR",
-          department: "HR",
-          experience: 6,
-          skills: ["Recruiting", "Employee relations", "Onboarding"],
-          status: "Active"
-        }
+      employeeModalOpen: false,
+      employeeModalMode: "add",
+      employeeForm: {
+        id: null,
+        name: "",
+        email: "",
+        phone: "",
+        gender: "",
+        department: "",
+        designation: "",
+        experience: 0,
+        joiningDate: "",
+        status: "Active",
+        skills: []
+      },
+      employeeFormOriginal: null,
+      employeeToDelete: null,
+      selectedEmployee: null,
+      tableMessage: "",
+      genderOptions: ["Female", "Male", "Non-binary", "Prefer not to say"],
+      skillOptions: [
+        "Vue.js", "Angular", "Node.js", "AWS", "Figma", "Prototyping",
+        "Design systems", "JavaScript", "REST APIs", "Recruiting",
+        "Employee relations", "Onboarding", "SQL", "Communication"
+      ],
+      employeeTableColumns: [
+        { key: "name", label: "Name" },
+        { key: "email", label: "Email" },
+        { key: "phone", label: "Phone" },
+        { key: "gender", label: "Gender" },
+        { key: "designation", label: "Designation" },
+        { key: "department", label: "Department" },
+        { key: "skills", label: "Skills", format: (skills) => skills.join(", ") },
+        { key: "experience", label: "Experience" },
+        { key: "joiningDate", label: "Joining date" },
+        { key: "status", label: "Status" }
       ],
       products: [
         {
@@ -569,17 +833,131 @@ export default {
       this.activeTab = tab;
     },
 
+    createEmptyEmployeeForm() {
+      return {
+        id: null,
+        name: "",
+        email: "",
+        phone: "",
+        gender: "",
+        department: "",
+        designation: "",
+        experience: 0,
+        joiningDate: "",
+        status: "Active",
+        skills: []
+      };
+    },
+
+    openAddEmployeeModal() {
+      this.employeeModalMode = "add";
+      this.employeeForm = this.createEmptyEmployeeForm();
+      this.employeeFormOriginal = null;
+      this.employeeToDelete = null;
+      this.employeeModalOpen = true;
+      this.tableMessage = "";
+    },
+
+    handleEmployeeEdit(employee) {
+      this.employeeModalMode = "edit";
+      this.employeeForm = {
+        ...employee,
+        skills: [...employee.skills]
+      };
+      this.employeeFormOriginal = { ...this.employeeForm, skills: [...this.employeeForm.skills] };
+      this.employeeToDelete = null;
+      this.employeeModalOpen = true;
+      this.selectedEmployee = null;
+      this.tableMessage = "";
+    },
+
+    confirmEmployeeForm(confirmModal) {
+      if (this.$refs.employeeFormElement?.reportValidity()) {
+        confirmModal();
+      }
+    },
+
+    handleEmployeeDelete(employee) {
+      this.employeeModalMode = "delete";
+      this.employeeToDelete = employee;
+      this.employeeModalOpen = true;
+      this.selectedEmployee = null;
+      this.tableMessage = "";
+    },
+
+    handleEmployeeModalConfirm() {
+      if (this.employeeModalMode === "delete") {
+        const deletedEmployee = this.employeeToDelete;
+        if (!deletedEmployee) {
+          return;
+        }
+
+        this.employees = this.employees.filter((employee) => employee.id !== deletedEmployee.id);
+        this.tableMessage = `${deletedEmployee.name} deleted.`;
+        this.employeeToDelete = null;
+        this.selectedEmployee = null;
+      } else {
+        const savedEmployee = {
+          id: this.employeeForm.id,
+          name: this.employeeForm.name.trim(),
+          designation: this.employeeForm.designation.trim(),
+          email: this.employeeForm.email.trim(),
+          phone: this.employeeForm.phone.trim(),
+          gender: this.employeeForm.gender,
+          department: this.employeeForm.department.trim(),
+          experience: Number(this.employeeForm.experience),
+          joiningDate: this.employeeForm.joiningDate,
+          status: this.employeeForm.status,
+          skills: [...this.employeeForm.skills]
+        };
+
+        if (this.employeeModalMode === "add") {
+          savedEmployee.id = Math.max(0, ...this.employees.map((employee) => employee.id)) + 1;
+          this.employees = [...this.employees, savedEmployee];
+          this.tableMessage = `${savedEmployee.name} added.`;
+        } else {
+          this.employees = this.employees.map((employee) =>
+            employee.id === savedEmployee.id ? savedEmployee : employee
+          );
+          this.tableMessage = `${savedEmployee.name} updated.`;
+        }
+
+        this.selectedEmployee = savedEmployee;
+      }
+
+      const searchTerm = this.employeeSearchKeyword.trim().toLowerCase();
+      this.employeeSearchResults = this.employees.filter((employee) =>
+        employee.name.toLowerCase().includes(searchTerm)
+      );
+      this.employeeForm = this.createEmptyEmployeeForm();
+      this.employeeFormOriginal = null;
+    },
+
+    resetEmployeeForm() {
+      this.employeeForm = this.employeeModalMode === "edit" && this.employeeFormOriginal
+        ? { ...this.employeeFormOriginal, skills: [...this.employeeFormOriginal.skills] }
+        : this.createEmptyEmployeeForm();
+    },
+
+    cancelEmployeeModal() {
+      this.employeeForm = this.createEmptyEmployeeForm();
+      this.employeeFormOriginal = null;
+      this.employeeToDelete = null;
+    },
+
+    handleEmployeeRowClick(employee) {
+      this.selectedEmployee = employee;
+      this.tableMessage = "";
+    },
+
     getDepartments() {
       return [...new Set(this.employees.map((employee) => employee.department))].sort();
     },
 
     getFilteredEmployees() {
-      if (this.departmentFilter === "all") {
-        return this.employees;
-      }
-
-      return this.employees.filter(
-        (employee) => employee.department === this.departmentFilter
+      return this.employeeSearchResults.filter(
+        (employee) =>
+          this.departmentFilter === "all" || employee.department === this.departmentFilter
       );
     },
 
@@ -836,12 +1214,6 @@ body {
   font: inherit;
 }
 
-.employee-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
 .eyebrow {
   margin: 0 0 11px;
   color: #61776a;
@@ -912,10 +1284,6 @@ h1 {
 
   .department-filter select {
     min-width: 160px;
-  }
-
-  .employee-grid {
-    grid-template-columns: 1fr;
   }
 
   h1 {
@@ -992,6 +1360,37 @@ h1 {
 
 .employee-directory {
   margin-top: 0;
+}
+
+.employee-search-input {
+  flex: 1 1 220px;
+}
+
+.employee-search-input input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #dce2d9;
+  border-radius: 5px;
+  color: #25342c;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+}
+
+.employee-search-input input:focus-visible {
+  outline: 2px solid #c36a4c;
+  outline-offset: 2px;
+}
+
+.employee-search-message {
+  margin: 0;
+  padding: 18px;
+  border: 1px solid #e1e5de;
+  border-radius: 6px;
+  color: #68736b;
+  background: #fff;
+  font-size: 13px;
 }
 
 .salary-calculator {
@@ -1320,6 +1719,14 @@ h1 {
 }
 
 @media (max-width: 700px) {
+  .directory-tools {
+    flex-wrap: wrap;
+  }
+
+  .employee-search-input {
+    flex-basis: 100%;
+  }
+
   .salary-heading {
     align-items: start;
     flex-direction: column;
@@ -1342,8 +1749,8 @@ h1 {
 @media (max-width: 480px) {
   .view-switch button {
     min-width: 0;
-    padding: 0 3px;
-    font-size: 9px;
+    padding: 0 1px;
+    font-size: 8px;
     white-space: nowrap;
   }
 
