@@ -1,10 +1,13 @@
 <template>
   <div class="employee-grid grid grid-cols-1 gap-4 sm:grid-cols-2">
-    <EmployeeCard
+    <RouterLink
       v-for="employee in employees"
       :key="employee.id"
-      :employee="employee"
-    />
+      class="block no-underline"
+      :to="{ name: 'employee-detail', params: { id: employee.id } }"
+    >
+      <EmployeeCard :employee="employee" />
+    </RouterLink>
   </div>
 </template>
 

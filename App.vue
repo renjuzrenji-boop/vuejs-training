@@ -41,6 +41,22 @@
         >
           Salary Calculator
         </button>
+        <button
+          type="button"
+          :aria-pressed="activeTab === 'application'"
+          :class="{ 'is-current': activeTab === 'application' }"
+          @click="showTab('application')"
+        >
+          Job Application
+        </button>
+        <button
+          type="button"
+          :aria-pressed="activeTab === 'api-employees'"
+          :class="{ 'is-current': activeTab === 'api-employees' }"
+          @click="showTab('api-employees')"
+        >
+          API Employees
+        </button>
       </div>
 
       <template v-if="activeTab === 'shop'">
@@ -498,6 +514,9 @@
       </Modal>
       </template>
 
+      <JobApplicationForm v-else-if="activeTab === 'application'" />
+      <ApiEmployeeManager v-else-if="activeTab === 'api-employees'" />
+
     </main>
   </div>
 </template>
@@ -506,6 +525,8 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import DataTable from "./src/components/DataTable.vue";
 import EmployeeList from "./src/components/EmployeeList.vue";
+import JobApplicationForm from "./src/components/JobApplicationForm.vue";
+import ApiEmployeeManager from "./src/components/ApiEmployeeManager.vue";
 import Modal from "./src/components/Modal.vue";
 
 export default {
@@ -514,6 +535,8 @@ export default {
   components: {
     DataTable,
     EmployeeList,
+    JobApplicationForm,
+    ApiEmployeeManager,
     Modal
   },
 
@@ -1289,6 +1312,7 @@ h1 {
   h1 {
     font-size: 30px;
   }
+
 }
 
 .visually-hidden {
