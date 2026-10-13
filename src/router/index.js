@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { currentUser, ROLES } from "../auth/session.js";
+import { useAuthStore, ROLES } from "../stores/authStore.js";
 
 const allRoles = [ROLES.ADMIN, ROLES.HR, ROLES.EMPLOYEE];
 const managementRoles = [ROLES.ADMIN, ROLES.HR];
@@ -70,26 +70,36 @@ const router = createRouter({
   ]
 });
 
-router.beforeEach((to) => {
-  if (to.meta.guestOnly && currentUser.value) {
+router.beforeEach(async (to) => {
+  const authStore = useAuthStore();
+
+  if (authStore.token && !authStore.hasFetchedUser) {
+    try {
+      await authStore.fetchUser();
+    } catch {
+      authStore.logout();
+    }
+  }
+
+  if (to.meta.guestOnly && authStore.isAuthenticated) {
     return { name: "dashboard" };
   }
 
-  if (to.meta.requiresAuth && !currentUser.value) {
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return {
       name: "login",
       query: { redirect: to.fullPath }
     };
   }
 
-  if (to.meta.roles && !to.meta.roles.includes(currentUser.value?.role)) {
+  if (to.meta.roles && !to.meta.roles.includes(authStore.role)) {
     return { name: "forbidden" };
   }
 
   if (
     to.meta.ownerOnly &&
-    currentUser.value?.role === ROLES.EMPLOYEE &&
-    String(currentUser.value.employeeId) !== String(to.params.id)
+    authStore.role === ROLES.EMPLOYEE &&
+    String(authStore.user?.employeeId) !== String(to.params.id)
   ) {
     return { name: "forbidden" };
   }

@@ -1,13 +1,13 @@
 <template>
-  <div class="min-h-screen bg-[#f3f5f0] text-[#202923]">
-    <header class="border-b border-[#e7ebe5] bg-white">
+  <div :data-theme="theme" class="theme-root min-h-screen bg-[#f3f5f0] text-[#202923]">
+    <header class="portal-header border-b border-[#e7ebe5] bg-white">
       <div class="mx-auto flex w-[min(100%-32px,1120px)] flex-wrap items-center justify-between gap-4 py-4 sm:h-[68px] sm:flex-nowrap sm:py-0">
         <RouterLink class="inline-flex items-center gap-3 text-sm font-bold text-[#202923] no-underline" :to="{ name: 'dashboard' }">
           <span class="grid h-[30px] w-[30px] place-items-center rounded-lg bg-[#32634f] font-serif text-[17px] text-white">E</span>
           <span>People<span class="font-normal text-[#7a847d]"> / Portal</span></span>
         </RouterLink>
 
-        <div v-if="currentUser" class="flex w-full items-center gap-3 sm:w-auto">
+        <div v-if="authStore.isAuthenticated" class="flex w-full items-center gap-3 sm:w-auto">
           <nav class="flex min-w-0 flex-1 gap-1 overflow-x-auto sm:flex-initial" aria-label="Main navigation">
             <RouterLink
               v-for="item in visibleNavigation"
@@ -19,10 +19,12 @@
             </RouterLink>
           </nav>
           <span class="hidden whitespace-nowrap text-xs text-[#78827a] md:inline">
-            {{ currentUser.name }} · {{ currentUser.role }}
+            {{ authStore.user.name }} · {{ authStore.role }}
           </span>
           <button type="button" class="portal-sign-out" @click="leavePortal">Sign out</button>
         </div>
+
+        <ThemeSwitcher />
       </div>
     </header>
 
@@ -35,9 +37,13 @@
 <script setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { currentUser, signOut, ROLES } from "./auth/session.js";
+import ThemeSwitcher from "./components/ThemeSwitcher.vue";
+import { ROLES, useAuthStore } from "./stores/authStore.js";
+import { provideTheme } from "./composables/useTheme.js";
 
 const router = useRouter();
+const authStore = useAuthStore();
+const { theme } = provideTheme();
 const navigation = [
   { name: "dashboard", label: "Dashboard", roles: [ROLES.ADMIN, ROLES.HR, ROLES.EMPLOYEE] },
   { name: "employees", label: "Employees", roles: [ROLES.ADMIN, ROLES.HR] },
@@ -46,10 +52,10 @@ const navigation = [
   { name: "workspace", label: "Workspace", roles: [ROLES.ADMIN] }
 ];
 
-const visibleNavigation = computed(() => navigation.filter((item) => item.roles.includes(currentUser.value?.role)));
+const visibleNavigation = computed(() => navigation.filter((item) => item.roles.includes(authStore.role)));
 
 function leavePortal() {
-  signOut();
+  authStore.logout();
   router.replace({ name: "login" });
 }
 </script>

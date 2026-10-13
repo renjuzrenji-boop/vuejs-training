@@ -1,3 +1,114 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+[data-theme="light"] {
+	--theme-page: #f3f5f0;
+	--theme-surface: #ffffff;
+	--theme-text: #202923;
+	--theme-muted: #68736b;
+	--theme-border: #dce2d9;
+	--theme-accent: #32634f;
+	color-scheme: light;
+}
+
+[data-theme="dark"] {
+	--theme-page: #171d19;
+	--theme-surface: #222b25;
+	--theme-text: #eff4ef;
+	--theme-muted: #bdc8bf;
+	--theme-border: #4c5a50;
+	--theme-accent: #9be0b8;
+	color-scheme: dark;
+}
+
+[data-theme="high-contrast"] {
+	--theme-page: #000000;
+	--theme-surface: #000000;
+	--theme-text: #ffffff;
+	--theme-muted: #ffffff;
+	--theme-border: #ffffff;
+	--theme-accent: #00ffff;
+	color-scheme: dark;
+}
+
+.theme-root {
+	min-height: 100vh;
+	background-color: var(--theme-page);
+	color: var(--theme-text);
+}
+
+.portal-header {
+	background-color: var(--theme-surface);
+	border-color: var(--theme-border);
+}
+
+[data-theme="dark"] .workspace,
+[data-theme="high-contrast"] .workspace {
+	background-color: var(--theme-page);
+	background-image: none;
+	color: var(--theme-text);
+}
+
+[data-theme="dark"] :is(.topbar, .cart-panel, .product-card, .employee-card, .expense-history, .expense-form-panel, .category-panel, .expense-total, .salary-summary-item, .salary-table-wrap, .salary-empty, .employee-search-message, .application-form, .api-list-panel, .api-form),
+[data-theme="dark"] [class~="bg-white"],
+[data-theme="high-contrast"] :is(.topbar, .cart-panel, .product-card, .employee-card, .expense-history, .expense-form-panel, .category-panel, .expense-total, .salary-summary-item, .salary-table-wrap, .salary-empty, .employee-search-message, .application-form, .api-list-panel, .api-form),
+[data-theme="high-contrast"] [class~="bg-white"] {
+	background-color: var(--theme-surface) !important;
+	border-color: var(--theme-border) !important;
+	color: var(--theme-text);
+}
+
+[data-theme="dark"] [class*="text-[#202923]"],
+[data-theme="dark"] [class*="text-[#25342c]"],
+[data-theme="dark"] [class*="text-[#29342d]"],
+[data-theme="dark"] [class*="text-[#536158]"],
+[data-theme="dark"] [class*="text-[#68736b]"],
+[data-theme="high-contrast"] [class*="text-[#202923]"],
+[data-theme="high-contrast"] [class*="text-[#25342c]"],
+[data-theme="high-contrast"] [class*="text-[#29342d]"],
+[data-theme="high-contrast"] [class*="text-[#536158]"],
+[data-theme="high-contrast"] [class*="text-[#68736b]"] {
+	color: var(--theme-text) !important;
+}
+
+[data-theme="dark"] [class*="text-[#707b73]"],
+[data-theme="dark"] [class*="text-[#768078]"],
+[data-theme="dark"] [class*="text-[#78827a]"],
+[data-theme="dark"] [class*="text-[#828c84]"],
+[data-theme="dark"] [class*="text-[#849087]"],
+[data-theme="dark"] [class*="text-[#879088]"],
+[data-theme="high-contrast"] [class*="text-[#707b73]"],
+[data-theme="high-contrast"] [class*="text-[#768078]"],
+[data-theme="high-contrast"] [class*="text-[#78827a]"],
+[data-theme="high-contrast"] [class*="text-[#828c84]"],
+[data-theme="high-contrast"] [class*="text-[#849087]"],
+[data-theme="high-contrast"] [class*="text-[#879088]"] {
+	color: var(--theme-muted) !important;
+}
+
+[data-theme="dark"] [class*="border-[#"],
+[data-theme="high-contrast"] [class*="border-[#"] {
+	border-color: var(--theme-border) !important;
+}
+
+[data-theme="dark"] input:not([type="checkbox"]),
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+[data-theme="high-contrast"] input:not([type="checkbox"]),
+[data-theme="high-contrast"] select,
+[data-theme="high-contrast"] textarea {
+	border-color: var(--theme-border) !important;
+	background-color: var(--theme-surface);
+	color: var(--theme-text);
+}
+
+[data-theme="high-contrast"] a,
+[data-theme="high-contrast"] button:not([aria-pressed="true"]) {
+	text-decoration-thickness: 2px;
+}
+
+[data-theme="high-contrast"] :focus-visible {
+	outline: 3px solid #ffff00 !important;
+	outline-offset: 2px;
+}

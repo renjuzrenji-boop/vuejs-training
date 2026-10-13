@@ -57,6 +57,14 @@
         >
           API Employees
         </button>
+        <button
+          type="button"
+          :aria-pressed="activeTab === 'pinia-cart'"
+          :class="{ 'is-current': activeTab === 'pinia-cart' }"
+          @click="showTab('pinia-cart')"
+        >
+          Pinia Cart
+        </button>
       </div>
 
       <template v-if="activeTab === 'shop'">
@@ -516,6 +524,7 @@
 
       <JobApplicationForm v-else-if="activeTab === 'application'" />
       <ApiEmployeeManager v-else-if="activeTab === 'api-employees'" />
+      <PiniaCartDemo v-else-if="activeTab === 'pinia-cart'" />
 
     </main>
   </div>
@@ -527,6 +536,7 @@ import DataTable from "./src/components/DataTable.vue";
 import EmployeeList from "./src/components/EmployeeList.vue";
 import JobApplicationForm from "./src/components/JobApplicationForm.vue";
 import ApiEmployeeManager from "./src/components/ApiEmployeeManager.vue";
+import PiniaCartDemo from "./src/components/PiniaCartDemo.vue";
 import Modal from "./src/components/Modal.vue";
 
 export default {
@@ -537,6 +547,7 @@ export default {
     EmployeeList,
     JobApplicationForm,
     ApiEmployeeManager,
+    PiniaCartDemo,
     Modal
   },
 

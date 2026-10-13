@@ -13,9 +13,10 @@
 import { computed } from "vue";
 import EmployeeProfile from "../components/EmployeeProfile.vue";
 import { employees } from "../data/employees.js";
-import { currentUser } from "../auth/session.js";
+import { useAuthStore } from "../stores/authStore.js";
 
+const authStore = useAuthStore();
 const currentEmployee = computed(() =>
-  employees.value.find((employee) => employee.id === currentUser.value?.employeeId)
+  employees.value.find((employee) => employee.id === authStore.user?.employeeId)
 );
 </script>

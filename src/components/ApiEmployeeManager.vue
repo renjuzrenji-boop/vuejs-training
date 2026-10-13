@@ -6,13 +6,13 @@
         <h1 id="api-employees-title">Employee API</h1>
         <p class="page-description">Create, inspect, update, and remove employee records.</p>
       </div>
-      <button type="button" class="api-refresh" :disabled="isLoading" @click="loadEmployees">
-        {{ isLoading ? "Refreshing..." : "Refresh list" }}
+      <button type="button" class="api-refresh" :disabled="loading" @click="loadEmployees">
+        {{ loading ? "Refreshing..." : "Refresh list" }}
       </button>
     </header>
 
     <p v-if="successMessage" class="api-success" role="status">{{ successMessage }}</p>
-    <p v-if="requestError" class="api-error" role="alert">{{ requestError }}</p>
+    <p v-if="error" class="api-error" role="alert">{{ error }}</p>
 
     <div class="api-layout">
       <section class="api-list-panel" aria-labelledby="api-list-title">
@@ -21,7 +21,7 @@
           <span>{{ employees.length }} records</span>
         </div>
 
-        <p v-if="isLoading" class="api-empty" role="status">Loading employees...</p>
+        <p v-if="loading" class="api-empty" role="status">Loading employees...</p>
         <div v-else class="api-table-wrap">
           <DataTable
             :columns="columns"
@@ -123,11 +123,21 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import DataTable from "./DataTable.vue";
+import { useEmployee } from "../composables/useEmployee.js";
 
-const employees = ref([]);
+const {
+  employees,
+  loading,
+  error,
+  fetchEmployees,
+  fetchEmployee,
+  addEmployee,
+  updateEmployee,
+  patchEmployee,
+  deleteEmployee: removeEmployee
+} = useEmployee();
 const selectedEmployee = ref(null);
 const pendingDelete = ref(null);
-const isLoading = ref(false);
 const isLoadingDetail = ref(false);
 const isSaving = ref(false);
 const isDeleting = ref(false);
@@ -156,49 +166,21 @@ const emptyForm = () => ({
 
 const form = reactive(emptyForm());
 
-async function request(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers
-    }
-  });
-
-  if (!response.ok) {
-    const responseBody = await response.json().catch(() => null);
-    throw new Error(responseBody?.message || `Request failed (${response.status}).`);
-  }
-
-  return response.status === 204 ? null : response.json();
-}
-
-function showError(error) {
-  requestError.value = error instanceof Error ? error.message : "The request failed. Please try again.";
-  successMessage.value = "";
-}
-
 async function loadEmployees() {
-  isLoading.value = true;
-  requestError.value = "";
-
   try {
-    employees.value = await request("/api/employees");
-  } catch (error) {
-    showError(error);
-  } finally {
-    isLoading.value = false;
+    await fetchEmployees();
+  } catch {
+    successMessage.value = "";
   }
 }
 
 async function loadEmployeeDetails(employee) {
   isLoadingDetail.value = true;
-  requestError.value = "";
 
   try {
-    selectedEmployee.value = await request(`/api/employees/${employee.id}`);
-  } catch (error) {
-    showError(error);
+    selectedEmployee.value = await fetchEmployee(employee.id);
+  } catch {
+    successMessage.value = "";
   } finally {
     isLoadingDetail.value = false;
   }
@@ -244,28 +226,23 @@ function createPayload() {
 
 async function saveEmployee() {
   isSaving.value = true;
-  requestError.value = "";
   successMessage.value = "";
 
   try {
     if (formMode.value === "create") {
-      await request("/api/employees", {
-        method: "POST",
-        body: JSON.stringify(createPayload())
-      });
+      await addEmployee(createPayload());
       successMessage.value = "Employee created.";
     } else {
-      await request(`/api/employees/${form.id}`, {
-        method: "PUT",
-        body: JSON.stringify(createPayload())
-      });
+      const updatedEmployee = await updateEmployee(form.id, createPayload());
+      if (String(selectedEmployee.value?.id) === String(updatedEmployee.id)) {
+        selectedEmployee.value = updatedEmployee;
+      }
       successMessage.value = "Employee updated.";
     }
 
     resetForm();
-    await loadEmployees();
-  } catch (error) {
-    showError(error);
+  } catch {
+    successMessage.value = "";
   } finally {
     isSaving.value = false;
   }
@@ -277,19 +254,14 @@ async function toggleEmployeeStatus() {
   }
 
   isPatching.value = true;
-  requestError.value = "";
 
   try {
-    selectedEmployee.value = await request(`/api/employees/${selectedEmployee.value.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        status: selectedEmployee.value.status === "Active" ? "Inactive" : "Active"
-      })
+    selectedEmployee.value = await patchEmployee(selectedEmployee.value.id, {
+      status: selectedEmployee.value.status === "Active" ? "Inactive" : "Active"
     });
     successMessage.value = "Employee status updated.";
-    await loadEmployees();
-  } catch (error) {
-    showError(error);
+  } catch {
+    successMessage.value = "";
   } finally {
     isPatching.value = false;
   }
@@ -301,18 +273,16 @@ async function deleteEmployee() {
   }
 
   isDeleting.value = true;
-  requestError.value = "";
 
   try {
-    await request(`/api/employees/${pendingDelete.value.id}`, { method: "DELETE" });
+    await removeEmployee(pendingDelete.value.id);
     if (String(selectedEmployee.value?.id) === String(pendingDelete.value.id)) {
       selectedEmployee.value = null;
     }
     successMessage.value = "Employee deleted.";
     pendingDelete.value = null;
-    await loadEmployees();
-  } catch (error) {
-    showError(error);
+  } catch {
+    successMessage.value = "";
   } finally {
     isDeleting.value = false;
   }

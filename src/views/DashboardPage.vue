@@ -47,11 +47,12 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import EmployeeList from "../components/EmployeeList.vue";
 import { employees } from "../data/employees.js";
-import { currentUser, ROLES } from "../auth/session.js";
+import { ROLES, useAuthStore } from "../stores/authStore.js";
 
 const router = useRouter();
-const dashboardEmployees = computed(() => currentUser.value?.role === ROLES.EMPLOYEE
-  ? employees.value.filter((employee) => employee.id === currentUser.value.employeeId)
+const authStore = useAuthStore();
+const dashboardEmployees = computed(() => authStore.role === ROLES.EMPLOYEE
+  ? employees.value.filter((employee) => employee.id === authStore.user?.employeeId)
   : employees.value);
 const activeCount = computed(() => dashboardEmployees.value.filter((employee) => employee.status === "Active").length);
 const departmentCount = computed(() => new Set(dashboardEmployees.value.map((employee) => employee.department)).size);
