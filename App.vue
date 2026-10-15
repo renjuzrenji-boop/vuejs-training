@@ -65,6 +65,14 @@
         >
           Pinia Cart
         </button>
+        <button
+          type="button"
+          :aria-pressed="activeTab === 'task-manager'"
+          :class="{ 'is-current': activeTab === 'task-manager' }"
+          @click="showTab('task-manager')"
+        >
+          Task Manager
+        </button>
       </div>
 
       <template v-if="activeTab === 'shop'">
@@ -201,24 +209,21 @@
                 aria-label="Search employees by name"
               />
             </label>
-            <p class="record-label">{{ getFilteredEmployees().length }} EMPLOYEES</p>
+            <p class="record-label">{{ filteredEmployees.length }} EMPLOYEES</p>
             <label class="department-filter">
               <span>Department</span>
               <select v-model="departmentFilter" aria-label="Filter employees by department">
                 <option value="all">All departments</option>
-                <option v-for="department in getDepartments()" :key="department" :value="department">
+                <option v-for="department in departments" :key="department" :value="department">
                   {{ department }}
                 </option>
               </select>
             </label>
           </div>
         </div>
-        <p v-if="isEmployeeSearchLoading" class="employee-search-message" role="status">
-          Searching employees...
-        </p>
         <EmployeeList
-          v-else-if="getFilteredEmployees().length"
-          :employees="getFilteredEmployees()"
+          v-if="filteredEmployees.length"
+          :employees="filteredEmployees"
         />
         <p v-else class="employee-search-message">No employees match the current filters.</p>
       </section>
@@ -420,69 +425,13 @@
         <p v-if="employeeModalMode === 'delete'" class="m-0 text-sm leading-6 text-[#68736b]">
           Delete {{ employeeToDelete?.name }}? This action cannot be undone.
         </p>
-        <form
+        <EmployeeForm
           v-else
-          ref="employeeFormElement"
-          class="grid grid-cols-1 gap-4 sm:grid-cols-2"
-          aria-label="Employee registration form"
-          @submit.prevent
-        >
-          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
-            <span>Name</span>
-            <input v-model.trim="employeeForm.name" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
-          </label>
-          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
-            <span>Email</span>
-            <input v-model.trim="employeeForm.email" type="email" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
-          </label>
-          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
-            <span>Phone</span>
-            <input v-model.trim="employeeForm.phone" type="tel" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
-          </label>
-          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
-            <span>Gender</span>
-            <select v-model="employeeForm.gender" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required>
-              <option disabled value="">Choose a gender</option>
-              <option v-for="gender in genderOptions" :key="gender" :value="gender">{{ gender }}</option>
-            </select>
-          </label>
-          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
-            <span>Department</span>
-            <input v-model.trim="employeeForm.department" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
-          </label>
-          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
-            <span>Designation</span>
-            <input v-model.trim="employeeForm.designation" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
-          </label>
-          <fieldset class="grid gap-2 border-0 p-0 sm:col-span-2">
-            <legend class="mb-1.5 text-xs font-medium text-[#68736b]">Skills</legend>
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <label
-                v-for="skill in skillOptions"
-                :key="skill"
-                class="flex items-center gap-2 text-sm text-[#29342d]"
-              >
-                <input v-model="employeeForm.skills" type="checkbox" :value="skill" class="h-4 w-4 accent-[#32634f]" />
-                {{ skill }}
-              </label>
-            </div>
-          </fieldset>
-          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
-            <span>Experience (years)</span>
-            <input v-model.number="employeeForm.experience" type="number" min="0" step="0.5" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
-          </label>
-          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
-            <span>Joining date</span>
-            <input v-model="employeeForm.joiningDate" type="date" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]" required />
-          </label>
-          <label class="grid gap-1.5 text-xs font-medium text-[#68736b]">
-            <span>Status</span>
-            <select v-model="employeeForm.status" class="h-10 rounded border border-[#dce3dc] px-3 text-sm text-[#29342d]">
-              <option>Active</option>
-              <option>Inactive</option>
-            </select>
-          </label>
-        </form>
+          v-model="employeeForm"
+          :gender-options="genderOptions"
+          :skill-options="skillOptions"
+          @submit="handleEmployeeFormSubmit"
+        />
 
         <template #footer="{ confirm, cancel }">
           <div class="flex justify-end gap-2">
@@ -511,9 +460,9 @@
             </button>
             <button
               v-else
-              type="button"
+              type="submit"
+              form="employee-registration"
               class="inline-flex h-10 min-w-24 items-center justify-center rounded bg-[#32634f] px-4 text-sm font-semibold text-white hover:bg-[#295440]"
-              @click="confirmEmployeeForm(confirm)"
             >
               {{ employeeModalMode === "edit" ? "Save changes" : "Submit" }}
             </button>
@@ -525,18 +474,21 @@
       <JobApplicationForm v-else-if="activeTab === 'application'" />
       <ApiEmployeeManager v-else-if="activeTab === 'api-employees'" />
       <PiniaCartDemo v-else-if="activeTab === 'pinia-cart'" />
+      <TaskManager v-else-if="activeTab === 'task-manager'" />
 
     </main>
   </div>
 </template>
 
 <script>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref } from "vue";
 import DataTable from "./src/components/DataTable.vue";
+import EmployeeForm from "./src/components/EmployeeForm.vue";
 import EmployeeList from "./src/components/EmployeeList.vue";
 import JobApplicationForm from "./src/components/JobApplicationForm.vue";
 import ApiEmployeeManager from "./src/components/ApiEmployeeManager.vue";
 import PiniaCartDemo from "./src/components/PiniaCartDemo.vue";
+import TaskManager from "./src/components/TaskManager.vue";
 import Modal from "./src/components/Modal.vue";
 
 export default {
@@ -544,10 +496,12 @@ export default {
 
   components: {
     DataTable,
+    EmployeeForm,
     EmployeeList,
     JobApplicationForm,
     ApiEmployeeManager,
     PiniaCartDemo,
+    TaskManager,
     Modal
   },
 
@@ -581,8 +535,6 @@ export default {
       { value: "7500-plus", label: "$7,500 and above" }
     ];
     const employeeSearchKeyword = ref("");
-    const employeeSearchResults = ref([]);
-    const isEmployeeSearchLoading = ref(false);
     const employees = ref([
       {
         id: 1,
@@ -637,8 +589,6 @@ export default {
         status: "Active"
       }
     ]);
-    let latestSearchId = 0;
-
     const calculatedSalaries = computed(() => salaryEmployees.value.map((employee) => {
       const grossSalary = employee.basicSalary + employee.hra + employee.da + employee.bonus;
       const taxAmount = grossSalary * employee.taxRate / 100;
@@ -666,41 +616,6 @@ export default {
 
       const total = filteredSalaryRecords.value.reduce((sum, employee) => sum + employee.netSalary, 0);
       return total / filteredSalaryRecords.value.length;
-    });
-
-    function simulateEmployeeSearch(keyword) {
-      const normalizedKeyword = keyword.trim().toLowerCase();
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(employees.value.filter((employee) =>
-            employee.name.toLowerCase().includes(normalizedKeyword)
-          ));
-        }, 400);
-      });
-    }
-
-    watch(employeeSearchKeyword, (keyword, previousKeyword, onCleanup) => {
-      const searchId = ++latestSearchId;
-      isEmployeeSearchLoading.value = true;
-      const debounceTimer = setTimeout(async () => {
-        const results = await simulateEmployeeSearch(keyword);
-        if (searchId === latestSearchId) {
-          employeeSearchResults.value = results;
-          isEmployeeSearchLoading.value = false;
-        }
-      }, 300);
-
-      onCleanup(() => clearTimeout(debounceTimer));
-    });
-
-    onMounted(async () => {
-      const searchId = ++latestSearchId;
-      isEmployeeSearchLoading.value = true;
-      const results = await simulateEmployeeSearch(employeeSearchKeyword.value);
-      if (searchId === latestSearchId) {
-        employeeSearchResults.value = results;
-        isEmployeeSearchLoading.value = false;
-      }
     });
 
     function addExpense() {
@@ -763,8 +678,6 @@ export default {
       highestSalary,
       averageSalary,
       employeeSearchKeyword,
-      employeeSearchResults,
-      isEmployeeSearchLoading,
       addExpense,
       deleteExpense,
       getTotalExpenses,
@@ -862,6 +775,23 @@ export default {
     };
   },
 
+  computed: {
+    departments() {
+      return [...new Set(this.employees.map((employee) => employee.department))].sort();
+    },
+
+    filteredEmployees() {
+      const searchTerm = this.employeeSearchKeyword.trim().toLowerCase();
+      return this.employees.filter((employee) => {
+        const matchesDepartment = this.departmentFilter === "all" || employee.department === this.departmentFilter;
+        const matchesSearch = `${employee.name} ${employee.department} ${employee.designation}`
+          .toLowerCase()
+          .includes(searchTerm);
+        return matchesDepartment && matchesSearch;
+      });
+    }
+  },
+
   methods: {
     showTab(tab) {
       this.activeTab = tab;
@@ -903,12 +833,6 @@ export default {
       this.employeeModalOpen = true;
       this.selectedEmployee = null;
       this.tableMessage = "";
-    },
-
-    confirmEmployeeForm(confirmModal) {
-      if (this.$refs.employeeFormElement?.reportValidity()) {
-        confirmModal();
-      }
     },
 
     handleEmployeeDelete(employee) {
@@ -959,12 +883,14 @@ export default {
         this.selectedEmployee = savedEmployee;
       }
 
-      const searchTerm = this.employeeSearchKeyword.trim().toLowerCase();
-      this.employeeSearchResults = this.employees.filter((employee) =>
-        employee.name.toLowerCase().includes(searchTerm)
-      );
       this.employeeForm = this.createEmptyEmployeeForm();
       this.employeeFormOriginal = null;
+    },
+
+    handleEmployeeFormSubmit(employeeForm) {
+      this.employeeForm = { ...employeeForm, skills: [...employeeForm.skills] };
+      this.handleEmployeeModalConfirm();
+      this.employeeModalOpen = false;
     },
 
     resetEmployeeForm() {
@@ -982,17 +908,6 @@ export default {
     handleEmployeeRowClick(employee) {
       this.selectedEmployee = employee;
       this.tableMessage = "";
-    },
-
-    getDepartments() {
-      return [...new Set(this.employees.map((employee) => employee.department))].sort();
-    },
-
-    getFilteredEmployees() {
-      return this.employeeSearchResults.filter(
-        (employee) =>
-          this.departmentFilter === "all" || employee.department === this.departmentFilter
-      );
     },
 
     getVisibleProducts() {

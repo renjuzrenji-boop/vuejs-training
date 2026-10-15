@@ -1,0 +1,1 @@
+import{o as r,c as t,t as s}from"./index-mmhb7DAp.js";const o={class:"my-3 rounded border border-[#efd6ce] bg-[#fff5f1] px-3 py-2.5 text-sm text-[#a54734]",role:"alert"},p={__name:"ErrorMessage",props:{message:{type:String,required:!0}},setup(e){return(a,c)=>(r(),t("p",o,s(e.message),1))}};export{p as _};

@@ -12,7 +12,7 @@
     </header>
 
     <p v-if="successMessage" class="api-success" role="status">{{ successMessage }}</p>
-    <p v-if="error" class="api-error" role="alert">{{ error }}</p>
+    <ErrorMessage v-if="error" :message="error" />
 
     <div class="api-layout">
       <section class="api-list-panel" aria-labelledby="api-list-title">
@@ -21,7 +21,7 @@
           <span>{{ employees.length }} records</span>
         </div>
 
-        <p v-if="loading" class="api-empty" role="status">Loading employees...</p>
+        <LoadingState v-if="loading" message="Loading employees..." />
         <div v-else class="api-table-wrap">
           <DataTable
             :columns="columns"
@@ -123,6 +123,8 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import DataTable from "./DataTable.vue";
+import ErrorMessage from "./ErrorMessage.vue";
+import LoadingState from "./LoadingState.vue";
 import { useEmployee } from "../composables/useEmployee.js";
 
 const {
@@ -142,7 +144,6 @@ const isLoadingDetail = ref(false);
 const isSaving = ref(false);
 const isDeleting = ref(false);
 const isPatching = ref(false);
-const requestError = ref("");
 const successMessage = ref("");
 const formMode = ref("create");
 
@@ -207,7 +208,6 @@ function resetForm() {
 
 function requestDelete(employee) {
   pendingDelete.value = employee;
-  requestError.value = "";
   successMessage.value = "";
 }
 

@@ -20,7 +20,7 @@
         {{ roleDescription }}
       </p>
 
-      <p v-if="loginError" class="text-sm text-[#a54734]" role="alert">{{ loginError }}</p>
+      <ErrorMessage v-if="loginError" :message="loginError" />
 
       <button
         type="submit"
@@ -36,6 +36,7 @@
 <script setup>
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import ErrorMessage from "../components/ErrorMessage.vue";
 import { ROLES, useAuthStore } from "../stores/authStore.js";
 
 const route = useRoute();

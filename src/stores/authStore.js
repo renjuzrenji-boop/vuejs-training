@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { apiUrl } from "../config/api.js";
 
 export const ROLES = Object.freeze({
   ADMIN: "ADMIN",
@@ -94,7 +95,7 @@ export const useAuthStore = defineStore("auth", {
       this.error = "";
 
       try {
-        const response = await fetch(`/api/employees/${this.user.employeeId}`, {
+        const response = await fetch(apiUrl(`employees/${this.user.employeeId}`), {
           headers: { Authorization: `Bearer ${this.token}` }
         });
         if (!response.ok) {

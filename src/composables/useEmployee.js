@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import { apiUrl } from "../config/api.js";
 
 export function useEmployee() {
   const employees = ref([]);
@@ -39,7 +40,7 @@ export function useEmployee() {
     loading.value = true;
 
     try {
-      employees.value = await execute(() => request("/api/employees"));
+      employees.value = await execute(() => request(apiUrl("employees")));
       return employees.value;
     } finally {
       loading.value = false;
@@ -47,12 +48,12 @@ export function useEmployee() {
   }
 
   function fetchEmployee(employeeId) {
-    return execute(() => request(`/api/employees/${employeeId}`));
+    return execute(() => request(apiUrl(`employees/${employeeId}`)));
   }
 
   function addEmployee(employee) {
     return execute(async () => {
-      const createdEmployee = await request("/api/employees", {
+      const createdEmployee = await request(apiUrl("employees"), {
         method: "POST",
         body: JSON.stringify(employee)
       });
@@ -63,7 +64,7 @@ export function useEmployee() {
 
   function updateEmployee(employeeId, employee) {
     return execute(async () => {
-      const updatedEmployee = await request(`/api/employees/${employeeId}`, {
+      const updatedEmployee = await request(apiUrl(`employees/${employeeId}`), {
         method: "PUT",
         body: JSON.stringify(employee)
       });
@@ -76,7 +77,7 @@ export function useEmployee() {
 
   function patchEmployee(employeeId, changes) {
     return execute(async () => {
-      const updatedEmployee = await request(`/api/employees/${employeeId}`, {
+      const updatedEmployee = await request(apiUrl(`employees/${employeeId}`), {
         method: "PATCH",
         body: JSON.stringify(changes)
       });
@@ -89,7 +90,7 @@ export function useEmployee() {
 
   function deleteEmployee(employeeId) {
     return execute(async () => {
-      await request(`/api/employees/${employeeId}`, { method: "DELETE" });
+      await request(apiUrl(`employees/${employeeId}`), { method: "DELETE" });
       employees.value = employees.value.filter((record) =>
         String(record.id) !== String(employeeId)
       );
